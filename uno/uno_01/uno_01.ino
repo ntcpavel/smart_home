@@ -1,9 +1,12 @@
-// (с) Школа 1103 Москва Проект умный дом. Код для AArduino Uno
+// (с) Школа 1103 Москва Проект умный дом. Код для Arduino Uno
 #include <MsTimer2.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
 #define PIN_DHT 2
+#define PIN_LEDR 5
+#define PIN_LEDG 6
+#define PIN_LEDB 9
 #define PIN_LED_1 7
 #define PIN_LED_2 8
 #define TIMER_PERIOD 10 // период аппаратного таймера
@@ -46,6 +49,9 @@ void setup() {
 Serial.begin(115200);
 pinMode(PIN_LED_1, OUTPUT);
 pinMode(PIN_LED_2, OUTPUT);
+pinMode(PIN_LEDR, OUTPUT);
+pinMode(PIN_LEDG, OUTPUT);
+pinMode(PIN_LEDB, OUTPUT);
 dht.begin(); // инициализация датчика температуры и влажности
 
 // инициализация переменных
@@ -80,8 +86,12 @@ void loop() {
     Serial.println(Sensors.Hum);
     Serial.print("L=");
     Serial.println(Sensors.Light);*/
+    // получили данные, обновляем исполнительные механизмы
      digitalWrite(PIN_LED_1,Drive.LedRed);
      digitalWrite(PIN_LED_2,Drive.LedBlue); 
+     analogWrite(PIN_LEDR, Drive.LedR);
+     analogWrite(PIN_LEDG, Drive.LedG);
+     analogWrite(PIN_LEDB, Drive.LedB);
   }
   if ( flagTimer1 == true ) {
     flagTimer1= false;
