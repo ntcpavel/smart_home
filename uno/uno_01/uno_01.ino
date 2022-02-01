@@ -1,8 +1,8 @@
+// (с) Школа 1103 Москва Проект умный дом. Код для AArduino Uno
 #include <MsTimer2.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#define STOP_TIME 15000 // время закрытия двери
 #define PIN_DHT 2
 #define PIN_LED_1 7
 #define PIN_LED_2 8
@@ -11,7 +11,7 @@
 #define CYCLE_2_TIME 200  // время цикла 2 (  TIMER_PERIOD*200=2000 мс)
 #define CYCLE_3_TIME 1500  // время цикла 3 (  TIMER_PERIOD*1500= 15 с)
 
-// https://alexgyver.ru/lessons/parsing/ - стереть!
+
 
 byte  timerCount1;    // счетчик таймера 1
 byte  timerCount2;    // счетчик таймера 2
@@ -33,7 +33,7 @@ struct myDrive {
 struct mySensors {
   byte Temp;
   byte Hum;
-  unsigned int Light;
+  int Light;
   };
 
 myDrive Drive;
@@ -43,7 +43,7 @@ boolean Btn1; // кнопка
 DHT_Unified dht(PIN_DHT, DHT11); // датчик температуры и влажности
 void setup() {
   // put your setup code here, to run once:
-Serial.begin(9600);
+Serial.begin(115200);
 pinMode(PIN_LED_1, OUTPUT);
 pinMode(PIN_LED_2, OUTPUT);
 dht.begin(); // инициализация датчика температуры и влажности
@@ -65,7 +65,6 @@ Sensors.Hum=0;
 Sensors.Light=0;
 Knock = false;
 Btn1 = false;
-
 MsTimer2::set(TIMER_PERIOD, timerInterupt); // 10ms period timer
 MsTimer2::start();
 }
@@ -92,18 +91,21 @@ void loop() {
 
   if ( flagTimer2 == true ) {
     flagTimer2= false;
-    // ТАЙМЕР 2   
+    // ТАЙМЕР 2   опрос датчиков
   sensors_event_t event;
-  dht.temperature().getEvent(&event);
-  Serial.print(" %\t");
-  Serial.print("Температура: ");
-  Serial.print(event.temperature);
-   //Sensors.Hum = (byte) dht.readHumidity(); //Измеряем влажность
-  //Sensors.Temp = (byte) dht.readTemperature(); //Измеряем температуру
-  dht.humidity().getEvent(&event);
+  dht.temperature().getEvent(&event); // считать температуру
+  Sensors.Temp = (byte)event.temperature;
+  dht.humidity().getEvent(&event); // считать влажность
+  Sensors.Hum = (byte)event.relative_humidity;
+
+  Serial.write((byte*)&Sensors, sizeof(Sensors)); // отправили данные в ESP
+ /* Serial.print("Температура: ");
+  Serial.print(Sensors.Temp);
+  Serial.print(" *C "); //Вывод показателей на экран
   Serial.print("Влажность: ");
-  Serial.print(event.relative_humidity);
-  Serial.println(" *C "); //Вывод показателей на экран
+  Serial.print(Sensors.Hum);
+  Serial.println(" %\t");*/
+  
   }
 
 if ( flagTimer3 == true ) {
@@ -115,8 +117,7 @@ if ( flagTimer3 == true ) {
    digitalWrite(PIN_LED_1,Drive.LedRed);
   }
 
-  
-  
+ 
 }
 
 void  timerInterupt(){
