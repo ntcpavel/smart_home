@@ -33,7 +33,7 @@ struct myDrive {
 struct mySensors {
   byte Temp;
   byte Hum;
-  int Light;
+  byte Light;
   };
 
 myDrive Drive;
@@ -73,20 +73,21 @@ void loop() {
 
 
 // читаем  методом readBytes()
-  // указываем ему буфер-структуру, но приводим тип к byte*
-  // размер можно указать через sizeof()
- /* if (Serial.readBytes((byte*)&buf, sizeof(buf))) {
-    Serial.println(buf.val_b);
-    Serial.println(buf.val_i);
-    Serial.println(buf.val_l);
-    Serial.println(buf.val_f); 
-    //Serial.println(2456);
-  }*/
+   if (Serial.readBytes((byte*)&Drive, sizeof(Drive))) {
+  /*  Serial.print("T=");
+    Serial.println(Sensors.Temp);
+    Serial.print("H=");
+    Serial.println(Sensors.Hum);
+    Serial.print("L=");
+    Serial.println(Sensors.Light);*/
+     digitalWrite(PIN_LED_1,Drive.LedRed);
+     digitalWrite(PIN_LED_2,Drive.LedBlue); 
+  }
   if ( flagTimer1 == true ) {
     flagTimer1= false;
     // ТАЙМЕР 1  
-    Drive.LedBlue=!Drive.LedBlue;
-    digitalWrite(PIN_LED_2,Drive.LedBlue); 
+   // Drive.LedBlue=!Drive.LedBlue;
+  //  digitalWrite(PIN_LED_2,Drive.LedBlue); 
   }
 
   if ( flagTimer2 == true ) {
@@ -113,8 +114,8 @@ if ( flagTimer3 == true ) {
     // ТАЙМЕР 3  
 
 
-   Drive.LedRed=!Drive.LedRed; 
-   digitalWrite(PIN_LED_1,Drive.LedRed);
+  // Drive.LedRed=!Drive.LedRed; 
+ //  digitalWrite(PIN_LED_1,Drive.LedRed);
   }
 
  
