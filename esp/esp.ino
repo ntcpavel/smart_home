@@ -3,7 +3,7 @@
 #include <iocontrol.h>
 #include <ESP8266WiFi.h>
 // Название панели на сайте iocontrol.ru
-const char* myPanelName = "big2c";
+const char* myPanelName = "sch1103";
 int status;
 // Название переменных как на сайте iocontrol.ru
 const char* VarName_Temperature = "Temperature";

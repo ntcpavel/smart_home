@@ -9,6 +9,7 @@
 #define PIN_LEDB 9
 #define PIN_LED_1 7
 #define PIN_LED_2 8
+#define PIN_DAC A0
 #define TIMER_PERIOD 10 // период аппаратного таймера
 #define CYCLE_1_TIME 50    // время цикла 1 ( TIMER_PERIOD*50=500 мс)
 #define CYCLE_2_TIME 200  // время цикла 2 (  TIMER_PERIOD*200=2000 мс)
@@ -80,13 +81,7 @@ void loop() {
 
 // читаем  методом readBytes()
    if (Serial.readBytes((byte*)&Drive, sizeof(Drive))) {
-  /*  Serial.print("T=");
-    Serial.println(Sensors.Temp);
-    Serial.print("H=");
-    Serial.println(Sensors.Hum);
-    Serial.print("L=");
-    Serial.println(Sensors.Light);*/
-    // получили данные, обновляем исполнительные механизмы
+     // получили данные, обновляем исполнительные механизмы
      digitalWrite(PIN_LED_1,Drive.LedRed);
      digitalWrite(PIN_LED_2,Drive.LedBlue); 
      analogWrite(PIN_LEDR, Drive.LedR);
@@ -108,6 +103,7 @@ void loop() {
   Sensors.Temp = (byte)event.temperature;
   dht.humidity().getEvent(&event); // считать влажность
   Sensors.Hum = (byte)event.relative_humidity;
+  Sensors.Light = analogRead(PIN_DAC) >>2; // считать датчик света
 
   Serial.write((byte*)&Sensors, sizeof(Sensors)); // отправили данные в ESP
  /* Serial.print("Температура: ");
