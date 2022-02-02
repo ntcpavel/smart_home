@@ -15,8 +15,8 @@ const char* VarName_LightRed = "LightRed";
 const char* VarName_LightGreen = "LightGreen";
 const char* VarName_LightBlue = "LightBlue";
 
-const char* ssid = "R2D2";
-const char* password = "rrDJLk6j*Pjb";
+const char* ssid = "AndroidAP3108";
+const char* password = "mifw4028";
 
 // Создаём объект клиента
 WiFiClient client;
