@@ -98,7 +98,9 @@ void loop() {
  if (password_good == true){
   password_good = false ; // сбросили
   // открыли замок
-  //Serial.println("pass good!");
+  digitalWrite(PIN_LED_2,HIGH); // включили светодиод пока
+  timerCount3=0; // запустили таймер на 15 с
+  
  }
 
   
@@ -127,7 +129,7 @@ void loop() {
 if ( flagTimer3 == true ) {
     flagTimer3= false;
     // ТАЙМЕР 3  
-
+digitalWrite(PIN_LED_2,LOW); // выключили светодиод пока
 
   // Drive.LedRed=!Drive.LedRed; 
  //  digitalWrite(PIN_LED_1,Drive.LedRed);
@@ -179,7 +181,7 @@ if (startCode == true) { // если кнопка отпущена, был за�
       if (cnt<PASS_LEN) {
       key[cnt]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
       }
-    cnt = cnt+1;
+    cnt++;
     if (cnt>=PASS_LEN) { // получили все нажатия по длине пароля
       for (byte i=0; i < PASS_LEN; i++){
         if (key[i] == password [i]) { // проверяем правильность пароля
