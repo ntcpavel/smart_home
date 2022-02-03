@@ -3,26 +3,38 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#define PIN_DHT 2
-#define PIN_LEDR 5
-#define PIN_LEDG 6
-#define PIN_LEDB 9
-#define PIN_LED_1 7
-#define PIN_LED_2 8
-#define PIN_DAC A0
+#define PIN_DHT 2 // датчик температуры
+#define PIN_BTN 4 // кнопка
+#define PIN_LEDR 5 // rgb светодиод
+#define PIN_LEDG 6 // rgb светодиод
+#define PIN_LEDB 9 // rgb светодиод
+#define PIN_LED_1 7 // // r светодиод
+#define PIN_LED_2 8 // b светодиод
+#define PIN_DAC A0 // фоторезистор
 #define TIMER_PERIOD 10 // период аппаратного таймера
 #define CYCLE_1_TIME 50    // время цикла 1 ( TIMER_PERIOD*50=500 мс)
 #define CYCLE_2_TIME 200  // время цикла 2 (  TIMER_PERIOD*200=2000 мс)
 #define CYCLE_3_TIME 1500  // время цикла 3 (  TIMER_PERIOD*1500= 15 с)
-
-
-
-byte  timerCount1;    // счетчик таймера 1
-byte  timerCount2;    // счетчик таймера 2
-unsigned int  timerCount3;    // счетчик таймера 3
-boolean flagTimer1;   // признак программного таймера 1
-boolean flagTimer2;   // признак программного таймера 2
-boolean flagTimer3;   // признак программного таймера 3
+#define BOUNCE_DELAY 50 // время на дребезг кнопки в мс
+#define SHORT_PRESS 350 // время короткого нажатия в мс
+#define PASS_LEN 6 // длина пароля
+//переменные
+ byte  timerCount1=0;    // счетчик таймера 1
+ byte  timerCount2=0;    // счетчик таймера 2
+ unsigned int  timerCount3=0;    // счетчик таймера 3
+ boolean flagTimer1=false;   // признак программного таймера 1
+ boolean flagTimer2=false;   // признак программного таймера 2
+ boolean flagTimer3=false;   // признак программного таймера 3
+ boolean btnState=false; // состояние кнопки
+ boolean flagBtnPressed=false; // флаг нажатия кнопки
+ unsigned long btnTimer = 0; // таймер для устранения дребезга кнопки
+ byte cnt=0; // счетчик
+ boolean startCode = false; // флаг начала кодовой последовательности
+//unsigned long codeTimer = 0; // таймер для измерения длительности нажатия кнопки
+boolean password[PASS_LEN] ={ true,  true, false, false ,false ,true }; // ключ открытия двери false - короткое true - динное нажатие
+boolean key[PASS_LEN] = { false,  false, false, false ,false ,false }; // текущий прием пароля
+boolean password_good =false; //совпадение пароля
+ unsigned long pulse_widht = 0; // длительность нажатия
 
 //структура для значений исполнителей 
 struct myDrive {
@@ -40,28 +52,21 @@ struct mySensors {
   byte Light;
   };
 
-myDrive Drive;
-mySensors Sensors;
-boolean Knock; // датчик удара
-boolean Btn1; // кнопка
+myDrive Drive; // переменная под структуру
+mySensors Sensors; // переменная под структуру
 DHT_Unified dht(PIN_DHT, DHT11); // датчик температуры и влажности
 void setup() {
-  // put your setup code here, to run once:
+  
 Serial.begin(115200);
 pinMode(PIN_LED_1, OUTPUT);
 pinMode(PIN_LED_2, OUTPUT);
 pinMode(PIN_LEDR, OUTPUT);
 pinMode(PIN_LEDG, OUTPUT);
 pinMode(PIN_LEDB, OUTPUT);
+pinMode(PIN_BTN, INPUT);
 dht.begin(); // инициализация датчика температуры и влажности
 
-// инициализация переменных
-timerCount1=0;
-timerCount2=0;
-timerCount3=0;
-flagTimer1=false;
-flagTimer2=false;
-flagTimer3=false;
+// инициализация структур
 Drive.LedR=0;
 Drive.LedB=0;
 Drive.LedG=0;
@@ -70,24 +75,34 @@ Drive.LedBlue=false;
 Sensors.Temp=0;
 Sensors.Hum=0;
 Sensors.Light=0;
-Knock = false;
-Btn1 = false;
-MsTimer2::set(TIMER_PERIOD, timerInterupt); // 10ms period timer
-MsTimer2::start();
+
+
+MsTimer2::set(TIMER_PERIOD, timerInterupt); // установка аппаратного таймера
+MsTimer2::start(); // пуск аппаратного таймера
 }
 
 void loop() {
 
 
-// читаем  методом readBytes()
+// читаем  методом readBytes() если ессть данные
    if (Serial.readBytes((byte*)&Drive, sizeof(Drive))) {
-     // получили данные, обновляем исполнительные механизмы
+     // получили данные от ESP из облака, обновляем исполнительные механизмы
      digitalWrite(PIN_LED_1,Drive.LedRed);
      digitalWrite(PIN_LED_2,Drive.LedBlue); 
      analogWrite(PIN_LEDR, Drive.LedR);
      analogWrite(PIN_LEDG, Drive.LedG);
      analogWrite(PIN_LEDB, Drive.LedB);
   }
+
+// правильный пароль замка
+ if (password_good == true){
+  password_good = false ; // сбросили
+  // открыли замок
+  //Serial.println("pass good!");
+ }
+
+  
+//*************************программные таймеры****************************
   if ( flagTimer1 == true ) {
     flagTimer1= false;
     // ТАЙМЕР 1  
@@ -106,13 +121,7 @@ void loop() {
   Sensors.Light = analogRead(PIN_DAC) >>2; // считать датчик света
 
   Serial.write((byte*)&Sensors, sizeof(Sensors)); // отправили данные в ESP
- /* Serial.print("Температура: ");
-  Serial.print(Sensors.Temp);
-  Serial.print(" *C "); //Вывод показателей на экран
-  Serial.print("Влажность: ");
-  Serial.print(Sensors.Hum);
-  Serial.println(" %\t");*/
-  
+
   }
 
 if ( flagTimer3 == true ) {
@@ -148,5 +157,42 @@ if ( timerCount3 >= CYCLE_3_TIME ) {
     timerCount3= 0;     // сброс счетчика
     flagTimer3= true;   // установка флага таймера 3
   }
-  
+
+  //********нажатие кнопки*********
+  btnState = !digitalRead(PIN_BTN); // считали кнопку инвертировано для удобства
+    if (btnState && !flagBtnPressed && millis() - btnTimer > BOUNCE_DELAY) {
+    flagBtnPressed = true; // кнопка нажата
+    btnTimer = millis();
+    }
+  //*********отпускание кнопки
+  if (!btnState && flagBtnPressed && millis() - btnTimer > BOUNCE_DELAY) {
+    flagBtnPressed = false; // кнопка отжата
+    pulse_widht=millis()-btnTimer; // длина замера
+    startCode =true;
+    btnTimer = millis();
+   }
+
+//****************кодовый замок*************
+
+if (startCode == true) { // если кнопка отпущена, был замер
+   startCode = false;
+      if (cnt<PASS_LEN) {
+      key[cnt]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
+      }
+    cnt = cnt+1;
+    if (cnt>=PASS_LEN) { // получили все нажатия по длине пароля
+      for (byte i=0; i < PASS_LEN; i++){
+        if (key[i] == password [i]) { // проверяем правильность пароля
+          password_good =true;
+          }
+        else {
+            password_good =false;
+          }
+          }
+   
+     cnt=0; // готовы к новой проверке пароля
+    }
+ }
+
+ 
   }
