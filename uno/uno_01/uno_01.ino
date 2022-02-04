@@ -8,11 +8,12 @@
 #define PIN_LEDR 5 // rgb светодиод
 #define PIN_LEDG 6 // rgb светодиод
 #define PIN_LEDB 9 // rgb светодиод
-#define PIN_LED_1 7 // // r светодиод
-#define PIN_LED_2 8 // b светодиод
+#define PIN_LED_1 7 // // красный светодиод
+#define PIN_LED_2 8 // синий светодиод
+#define PIN_LED_3 13 // зеленый светодиод
 #define PIN_DAC A0 // фоторезистор
 #define TIMER_PERIOD 10 // период аппаратного таймера
-#define CYCLE_1_TIME 50    // время цикла 1 ( TIMER_PERIOD*50=500 мс)
+#define CYCLE_1_TIME 100    // время цикла 1 ( TIMER_PERIOD*100=1000 мс)
 #define CYCLE_2_TIME 200  // время цикла 2 (  TIMER_PERIOD*200=2000 мс)
 #define CYCLE_3_TIME 1500  // время цикла 3 (  TIMER_PERIOD*1500= 15 с)
 #define BOUNCE_DELAY 50 // время на дребезг кнопки в мс
@@ -30,11 +31,13 @@
  unsigned long btnTimer = 0; // таймер для устранения дребезга кнопки
  byte cnt=0; // счетчик
  boolean startCode = false; // флаг начала кодовой последовательности
-//unsigned long codeTimer = 0; // таймер для измерения длительности нажатия кнопки
+ byte led_mode =1; // режим работы светодиода 1 - работа 2 - прием пароля 3
+ boolean blinker=false; // мигание светодиода
+
 boolean password[PASS_LEN] ={ true,  true, false, false ,false ,true }; // ключ открытия двери false - короткое true - динное нажатие
 boolean key[PASS_LEN] = { false,  false, false, false ,false ,false }; // текущий прием пароля
 boolean password_good =false; //совпадение пароля
- unsigned long pulse_widht = 0; // длительность нажатия
+unsigned long pulse_widht = 0; // длительность нажатия
 
 //структура для значений исполнителей 
 struct myDrive {
@@ -60,6 +63,7 @@ void setup() {
 Serial.begin(115200);
 pinMode(PIN_LED_1, OUTPUT);
 pinMode(PIN_LED_2, OUTPUT);
+pinMode(PIN_LED_3, OUTPUT);
 pinMode(PIN_LEDR, OUTPUT);
 pinMode(PIN_LEDG, OUTPUT);
 pinMode(PIN_LEDB, OUTPUT);
@@ -98,7 +102,7 @@ void loop() {
  if (password_good == true){
   password_good = false ; // сбросили
   // открыли замок
-  digitalWrite(PIN_LED_2,HIGH); // включили светодиод пока
+  //digitalWrite(PIN_LED_3,HIGH); // включили светодиод пока
   timerCount3=0; // запустили таймер на 15 с
   
  }
@@ -107,9 +111,22 @@ void loop() {
 //*************************программные таймеры****************************
   if ( flagTimer1 == true ) {
     flagTimer1= false;
-    // ТАЙМЕР 1  
-   // Drive.LedBlue=!Drive.LedBlue;
-  //  digitalWrite(PIN_LED_2,Drive.LedBlue); 
+    // ТАЙМЕР 1
+     
+    switch (led_mode) { // режимы работы светодиода PIN_LED_3
+      case 1:
+      // в работе
+      blinker=!blinker;
+      digitalWrite(PIN_LED_3,blinker);
+      break;
+      case 2:
+      // замок
+      digitalWrite(PIN_LED_3, LOW);
+      break;
+    }
+     
+   
+   
   }
 
   if ( flagTimer2 == true ) {
@@ -117,9 +134,19 @@ void loop() {
     // ТАЙМЕР 2   опрос датчиков
   sensors_event_t event;
   dht.temperature().getEvent(&event); // считать температуру
-  Sensors.Temp = (byte)event.temperature;
+  if (isnan(event.temperature)) {
+  Sensors.Temp = 0;}
+   else {
+    Sensors.Temp =(byte)event.temperature;
+   }
   dht.humidity().getEvent(&event); // считать влажность
-  Sensors.Hum = (byte)event.relative_humidity;
+  
+  if (isnan(event.relative_humidity)) {
+  Sensors.Hum = 0; }
+    else {
+    Sensors.Hum = (byte)event.relative_humidity;  
+    }
+  
   Sensors.Light = analogRead(PIN_DAC) >>2; // считать датчик света
 
   Serial.write((byte*)&Sensors, sizeof(Sensors)); // отправили данные в ESP
@@ -129,7 +156,7 @@ void loop() {
 if ( flagTimer3 == true ) {
     flagTimer3= false;
     // ТАЙМЕР 3  
-digitalWrite(PIN_LED_2,LOW); // выключили светодиод пока
+
 
   // Drive.LedRed=!Drive.LedRed; 
  //  digitalWrite(PIN_LED_1,Drive.LedRed);
@@ -178,6 +205,7 @@ if ( timerCount3 >= CYCLE_3_TIME ) {
 
 if (startCode == true) { // если кнопка отпущена, был замер
    startCode = false;
+   led_mode = 2; // режим работы светодиода 2
       if (cnt<PASS_LEN) {
       key[cnt]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
       }
@@ -193,6 +221,7 @@ if (startCode == true) { // если кнопка отпущена, был за�
           }
    
      cnt=0; // готовы к новой проверке пароля
+     led_mode = 1; // режим работы светодиода 1
     }
  }
 
