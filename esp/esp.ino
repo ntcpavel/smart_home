@@ -14,6 +14,7 @@ const char* VarName_Cool = "Cool";
 const char* VarName_LightRed = "LightRed";
 const char* VarName_LightGreen = "LightGreen";
 const char* VarName_LightBlue = "LightBlue";
+const char* VarName_AutoLight = "AutoLight";
 
 //const char* ssid = "AndroidAP3108";
 //const char* password = "mifw4028";
@@ -41,6 +42,7 @@ struct myDrive {
   byte LedB;
   boolean LedRed;
   boolean LedBlue;
+  boolean AutoLight;
 };
 
 myDrive Drive;
@@ -51,6 +53,7 @@ Drive.LedB=0;
 Drive.LedG=0;
 Drive.LedRed=false;
 Drive.LedBlue=false;
+Drive.AutoLight=false;
 Sensors.Temp=0;
 Sensors.Hum=0;
 Sensors.Light=0;
@@ -85,27 +88,23 @@ void loop() {
     status = mypanel.readUpdate();
     // Если статус равен константе OK...
     if (status == OK) {
-        // Выводим текст в последовательный порт
-       // Serial.println("------- Read OK -------");
+        
         // Записываем считанный из сервиса значения в переменные
-        long io_Heat = mypanel.readInt(VarName_Heat);   // целочисленная переменна
-       // Serial.println((String)"io_Heat = "+io_Heat);
-        long io_Cool = mypanel.readInt(VarName_Cool);   // целочисленная переменна
-      //  Serial.println((String)"io_Cool = "+io_Cool);
-        long io_LightRed = mypanel.readInt(VarName_LightRed);   // целочисленная переменна
-     //   Serial.println((String)"io_LightRed = "+io_LightRed);
-        long io_LightGreen = mypanel.readInt(VarName_LightGreen);   // целочисленная переменна
-    //    Serial.println((String)"io_LightGreen = "+io_LightGreen);
-        long io_LightBlue = mypanel.readInt(VarName_LightBlue);   // целочисленная переменна
-     //   Serial.println((String)"io_LightBlue = "+io_LightBlue);
+        long io_Heat = mypanel.readInt(VarName_Heat);   
+        long io_Cool = mypanel.readInt(VarName_Cool);   
+        long io_LightRed = mypanel.readInt(VarName_LightRed);   
+        long io_LightGreen = mypanel.readInt(VarName_LightGreen);   
+        long io_LightBlue = mypanel.readInt(VarName_LightBlue);   
+        long io_AutoLight = mypanel.readInt(VarName_AutoLight);   
 
 Drive.LedR= (byte) io_LightRed;
 Drive.LedB= (byte) io_LightBlue;
 Drive.LedG= (byte) io_LightGreen;
 Drive.LedRed= (boolean) io_Heat;
-Drive.LedBlue=(boolean) io_Cool;    
-//Serial.print("heat"); Serial.println(Drive.LedRed); 
-//Serial.print("cool"); Serial.println(Drive.LedBlue); 
+Drive.LedBlue=(boolean) io_Cool;   
+Drive.AutoLight = (boolean) io_AutoLight;
+
+
 
     }
 

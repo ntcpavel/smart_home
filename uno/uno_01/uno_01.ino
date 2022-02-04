@@ -39,6 +39,7 @@ boolean key[PASS_LEN] = { false,  false, false, false ,false ,false }; // тек
 boolean password_good =false; //совпадение пароля
 unsigned long pulse_widht = 0; // длительность нажатия
 
+
 //структура для значений исполнителей 
 struct myDrive {
   byte LedR;
@@ -46,6 +47,7 @@ struct myDrive {
   byte LedB;
   boolean LedRed;
   boolean LedBlue;
+  boolean AutoLight;
 };
 
 //структура для значений датчиков 
@@ -76,6 +78,7 @@ Drive.LedB=0;
 Drive.LedG=0;
 Drive.LedRed=false;
 Drive.LedBlue=false;
+Drive.AutoLight=true;
 Sensors.Temp=0;
 Sensors.Hum=0;
 Sensors.Light=0;
@@ -91,11 +94,15 @@ void loop() {
 // читаем  методом readBytes() если ессть данные
    if (Serial.readBytes((byte*)&Drive, sizeof(Drive))) {
      // получили данные от ESP из облака, обновляем исполнительные механизмы
+     
      digitalWrite(PIN_LED_1,Drive.LedRed);
      digitalWrite(PIN_LED_2,Drive.LedBlue); 
-     analogWrite(PIN_LEDR, Drive.LedR);
-     analogWrite(PIN_LEDG, Drive.LedG);
-     analogWrite(PIN_LEDB, Drive.LedB);
+     if (Drive.AutoLight == false) { // управляем светом из облака
+      analogWrite(PIN_LEDR, Drive.LedR);
+      analogWrite(PIN_LEDG, Drive.LedG);
+      analogWrite(PIN_LEDB, Drive.LedB);
+     }
+  
   }
 
 // правильный пароль замка
@@ -124,9 +131,25 @@ void loop() {
       digitalWrite(PIN_LED_3, LOW);
       break;
     }
-     
-   
-   
+// автоматическое управление светом
+if (Drive.AutoLight == true) {
+         if  (Sensors.Light<85) { // включаем свет на всю
+          analogWrite(PIN_LEDR, 255);
+          analogWrite(PIN_LEDG, 255);
+          analogWrite(PIN_LEDB, 255);
+        }
+        if  (Sensors.Light>85 && Sensors.Light<200) { // включаем свет на 50%
+          analogWrite(PIN_LEDR, 127);
+          analogWrite(PIN_LEDG, 10);
+          analogWrite(PIN_LEDB, 10);
+        }
+         if  (Sensors.Light>200) { // выключаем свет 
+          analogWrite(PIN_LEDR, 0);
+          analogWrite(PIN_LEDG, 0);
+          analogWrite(PIN_LEDB, 0);
+        }
+     }
+    
   }
 
   if ( flagTimer2 == true ) {
@@ -148,7 +171,6 @@ void loop() {
     }
   
   Sensors.Light = analogRead(PIN_DAC) >>2; // считать датчик света
-
   Serial.write((byte*)&Sensors, sizeof(Sensors)); // отправили данные в ESP
 
   }
