@@ -3,13 +3,15 @@
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
+#include <Servo.h>
 #define PIN_DHT 2 // датчик температуры
 #define PIN_BTN 4 // кнопка
 #define PIN_LEDR 5 // rgb светодиод
 #define PIN_LEDG 6 // rgb светодиод
-#define PIN_LEDB 9 // rgb светодиод
+#define PIN_LEDB 11 // rgb светодиод
 #define PIN_LED_1 7 // // красный светодиод
 #define PIN_LED_2 8 // синий светодиод
+#define PIN_SERVO 9 // сервопривод
 #define PIN_LED_3 13 // зеленый светодиод
 #define PIN_DAC A0 // фоторезистор
 #define TIMER_PERIOD 10 // период аппаратного таймера
@@ -36,7 +38,7 @@
  boolean startCode = false; // флаг начала кодовой последовательности
  byte led_mode =1; // режим работы светодиода 1 - работа 2 - прием пароля 3
  boolean blinker=false; // мигание светодиода
-
+ boolean door_open=false; // открытие двери
 boolean password[PASS_LEN] ={ true,  true, false, false ,false ,true }; // ключ открытия двери false - короткое true - динное нажатие
 boolean key[PASS_LEN] = { false,  false, false, false ,false ,false }; // текущий прием пароля
 boolean password_good =false; //совпадение пароля
@@ -64,6 +66,7 @@ struct mySensors {
 myDrive Drive; // переменная под структуру
 mySensors Sensors; // переменная под структуру
 DHT_Unified dht(PIN_DHT, DHT11); // датчик температуры и влажности
+Servo door_servo; // сервопривод
 void setup() {
   
 Serial.begin(115200);
@@ -75,7 +78,8 @@ pinMode(PIN_LEDG, OUTPUT);
 pinMode(PIN_LEDB, OUTPUT);
 pinMode(PIN_BTN, INPUT);
 dht.begin(); // инициализация датчика температуры и влажности
-
+door_servo.attach(PIN_SERVO); // инициализация сервопривода
+door_servo.write (0); // установили в ноль
 // инициализация структур
 Drive.LedR=0;
 Drive.LedB=0;
@@ -116,7 +120,8 @@ void loop() {
  if (password_good == true){
   password_good = false ; // сбросили
   // открыли замок
-  //digitalWrite(PIN_LED_3,HIGH); // включили светодиод пока
+  door_servo.write (180);
+  door_open = true; // дверь открыта
   timerCount3=0; // запустили таймер на 15 с
   
  }
@@ -211,9 +216,11 @@ if ( flagTimer3 == true ) {
     flagTimer3= false;
     // ТАЙМЕР 3  
 
-
-  // Drive.LedRed=!Drive.LedRed; 
- //  digitalWrite(PIN_LED_1,Drive.LedRed);
+ if (door_open == true) { // если дверь открыта
+  door_open = false;
+  door_servo.write (0); // закрыли дверь через 15 с
+ }
+  
   }
 
  
