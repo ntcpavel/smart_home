@@ -19,6 +19,9 @@
 #define BOUNCE_DELAY 50 // время на дребезг кнопки в мс
 #define SHORT_PRESS 350 // время короткого нажатия в мс
 #define PASS_LEN 6 // длина пароля
+#define LOW_TEMP 22 // уставка температуры на включение обогрева
+#define HI_TEMP 27 // уставка температуры на включение охлаждения
+#define ALARM_TEMP 28 // уставка температуры на сигнализацию
 //переменные
  byte  timerCount1=0;    // счетчик таймера 1
  byte  timerCount2=0;    // счетчик таймера 2
@@ -47,14 +50,15 @@ struct myDrive {
   byte LedB;
   boolean LedRed;
   boolean LedBlue;
-  boolean AutoLight;
-};
+  boolean Auto;
+  };
 
 //структура для значений датчиков 
 struct mySensors {
   byte Temp;
   byte Hum;
   byte Light;
+  boolean TempAlarm;
   };
 
 myDrive Drive; // переменная под структуру
@@ -78,11 +82,12 @@ Drive.LedB=0;
 Drive.LedG=0;
 Drive.LedRed=false;
 Drive.LedBlue=false;
-Drive.AutoLight=true;
+Drive.Auto=true;
+
 Sensors.Temp=0;
 Sensors.Hum=0;
 Sensors.Light=0;
-
+Sensors.TempAlarm=false;
 
 MsTimer2::set(TIMER_PERIOD, timerInterupt); // установка аппаратного таймера
 MsTimer2::start(); // пуск аппаратного таймера
@@ -95,9 +100,11 @@ void loop() {
    if (Serial.readBytes((byte*)&Drive, sizeof(Drive))) {
      // получили данные от ESP из облака, обновляем исполнительные механизмы
      
+     if  (Drive.Auto == false){ //управляем климатом из облака
      digitalWrite(PIN_LED_1,Drive.LedRed);
      digitalWrite(PIN_LED_2,Drive.LedBlue); 
-     if (Drive.AutoLight == false) { // управляем светом из облака
+     }
+     if (Drive.Auto == false) { // управляем светом из облака
       analogWrite(PIN_LEDR, Drive.LedR);
       analogWrite(PIN_LEDG, Drive.LedG);
       analogWrite(PIN_LEDB, Drive.LedB);
@@ -116,6 +123,7 @@ void loop() {
 
   
 //*************************программные таймеры****************************
+//**************Таймер 1********************** 
   if ( flagTimer1 == true ) {
     flagTimer1= false;
     // ТАЙМЕР 1
@@ -132,13 +140,13 @@ void loop() {
       break;
     }
 // автоматическое управление светом
-if (Drive.AutoLight == true) {
+if (Drive.Auto == true) {
          if  (Sensors.Light<85) { // включаем свет на всю
           analogWrite(PIN_LEDR, 255);
           analogWrite(PIN_LEDG, 255);
           analogWrite(PIN_LEDB, 255);
         }
-        if  (Sensors.Light>85 && Sensors.Light<200) { // включаем свет на 50%
+        if  (Sensors.Light>85 && Sensors.Light<200) { // включаем свет на серединку
           analogWrite(PIN_LEDR, 127);
           analogWrite(PIN_LEDG, 10);
           analogWrite(PIN_LEDB, 10);
@@ -149,9 +157,32 @@ if (Drive.AutoLight == true) {
           analogWrite(PIN_LEDB, 0);
         }
      }
-    
-  }
 
+ // автоматическое управление микроклиматом
+    if  (Drive.Auto == true) {
+    
+       if (Sensors.Temp<LOW_TEMP) {
+       digitalWrite(PIN_LED_1,HIGH); // если температура меньше уставки включить обогрев 
+       }
+       else {
+       digitalWrite(PIN_LED_1,LOW); // если температура больше уставки выключить обогрев
+       }
+       if (Sensors.Temp>HI_TEMP) {
+       digitalWrite(PIN_LED_2,HIGH); // если температура больше  уставки включить охлаждение 
+       }
+       else {
+       digitalWrite(PIN_LED_2,LOW); // если температура меньше уставки выключить охлаждение
+       }
+      }
+  // повышение температуры
+  if (Sensors.Temp>ALARM_TEMP) {
+       Sensors.TempAlarm=true; // если температура выше уставки включить сигнализацию 
+       }
+      else {
+      Sensors.TempAlarm=false; // если температура ниже уставки выключить сигнализацию
+    }
+  }
+//**************Таймер 2********************** 
   if ( flagTimer2 == true ) {
     flagTimer2= false;
     // ТАЙМЕР 2   опрос датчиков
@@ -175,6 +206,7 @@ if (Drive.AutoLight == true) {
 
   }
 
+//**************Таймер 3********************** 
 if ( flagTimer3 == true ) {
     flagTimer3= false;
     // ТАЙМЕР 3  

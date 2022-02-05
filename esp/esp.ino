@@ -14,7 +14,8 @@ const char* VarName_Cool = "Cool";
 const char* VarName_LightRed = "LightRed";
 const char* VarName_LightGreen = "LightGreen";
 const char* VarName_LightBlue = "LightBlue";
-const char* VarName_AutoLight = "AutoLight";
+const char* VarName_Auto = "Auto";
+const char* VarName_TempAlarm = "TempAlarm";
 
 //const char* ssid = "AndroidAP3108";
 //const char* password = "mifw4028";
@@ -33,7 +34,8 @@ iocontrol mypanel(myPanelName, client);
 struct mySensors {
   byte Temp;
   byte Hum;
-  byte Light; 
+  byte Light;
+  boolean TempAlarm; 
   };
 //структура для значений исполнителей 
 struct myDrive {
@@ -42,8 +44,8 @@ struct myDrive {
   byte LedB;
   boolean LedRed;
   boolean LedBlue;
-  boolean AutoLight;
-};
+  boolean Auto;
+  };
 
 myDrive Drive;
 mySensors Sensors;
@@ -53,10 +55,11 @@ Drive.LedB=0;
 Drive.LedG=0;
 Drive.LedRed=false;
 Drive.LedBlue=false;
-Drive.AutoLight=false;
+Drive.Auto=true;
 Sensors.Temp=0;
 Sensors.Hum=0;
 Sensors.Light=0;
+Sensors.TempAlarm=false;
 Serial.begin(115200);
 
 WiFi.begin(ssid, password);
@@ -95,14 +98,14 @@ void loop() {
         long io_LightRed = mypanel.readInt(VarName_LightRed);   
         long io_LightGreen = mypanel.readInt(VarName_LightGreen);   
         long io_LightBlue = mypanel.readInt(VarName_LightBlue);   
-        long io_AutoLight = mypanel.readInt(VarName_AutoLight);   
+        long io_Auto = mypanel.readInt(VarName_Auto);   
 
 Drive.LedR= (byte) io_LightRed;
 Drive.LedB= (byte) io_LightBlue;
 Drive.LedG= (byte) io_LightGreen;
 Drive.LedRed= (boolean) io_Heat;
 Drive.LedBlue=(boolean) io_Cool;   
-Drive.AutoLight = (boolean) io_AutoLight;
+Drive.Auto = (boolean) io_Auto;
 
 
 
@@ -114,7 +117,7 @@ Drive.AutoLight = (boolean) io_AutoLight;
     mypanel.write(VarName_Temperature, Sensors.Temp);    
     mypanel.write(VarName_Humidity, Sensors.Hum);    
     mypanel.write(VarName_Light, Sensors.Light);    
-    
+    mypanel.write(VarName_TempAlarm, Sensors.TempAlarm);
     // Отправляем переменные из контроллера в сервис
     status = mypanel.writeUpdate();
     // Если статус равен константе OK...
