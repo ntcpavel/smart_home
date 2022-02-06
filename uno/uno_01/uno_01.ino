@@ -1,14 +1,14 @@
 // (с) Школа 1103 Москва Проект умный дом. Код для Arduino Uno
-#include <MsTimer2.h>
+#include <MsTimer2.h> // pwm 3 11
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#include <Servo.h>
+#include <Servo.h> // pwm 9 10 
 #define PIN_DHT 2 // датчик температуры
 #define PIN_BTN 4 // кнопка
 #define PIN_LEDR 5 // rgb светодиод
 #define PIN_LEDG 6 // rgb светодиод
-#define PIN_LEDB 11 // rgb светодиод
+#define PIN_LEDB 10 // rgb светодиод
 #define PIN_LED_1 7 // // красный светодиод
 #define PIN_LED_2 8 // синий светодиод
 #define PIN_SERVO 9 // сервопривод
@@ -81,10 +81,11 @@ pinMode(PIN_LED_3, OUTPUT);
 pinMode(PIN_LEDR, OUTPUT);
 pinMode(PIN_LEDG, OUTPUT);
 pinMode(PIN_LEDB, OUTPUT);
-pinMode(PIN_BTN, INPUT);
+pinMode(PIN_BTN, INPUT_PULLUP);
 dht.begin(); // инициализация датчика температуры и влажности
 door_servo.attach(PIN_SERVO); // инициализация сервопривода
-door_servo.write (0); // установили в ноль
+door_servo.write(0); // установили в ноль
+//door_servo.detach(); //  освободили пин сервопривода для pwm rgb светодиода
 // инициализация структур
 Drive.LedR=0;
 Drive.LedB=0;
@@ -125,6 +126,7 @@ void loop() {
  if (password_good == true){
   password_good = false ; // сбросили
   // открыли замок
+ // door_servo.attach(PIN_SERVO); // подсоединили сервопривод
   door_servo.write (180);
   door_open = true; // дверь открыта
   timerCount3=0; // запустили таймер на 15 с
@@ -236,6 +238,7 @@ if ( flagTimer3 == true ) {
  if (door_open == true) { // если дверь открыта
   door_open = false;
   door_servo.write (0); // закрыли дверь через 15 с
+//  door_servo.detach(); //  освободили пин сервопривода для pwm rgb светодиода
  }
   
   }
