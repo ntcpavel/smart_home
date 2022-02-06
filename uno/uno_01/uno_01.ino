@@ -19,8 +19,11 @@
 #define CYCLE_2_TIME 200  // время цикла 2 (  TIMER_PERIOD*200=2000 мс)
 #define CYCLE_3_TIME 1500  // время цикла 3 (  TIMER_PERIOD*1500= 15 с)
 #define BOUNCE_DELAY 50 // время на дребезг кнопки в мс
-#define SHORT_PRESS 350 // время короткого нажатия в мс
-#define PASS_LEN 6 // длина пароля
+#define SHORT_PRESS 400 // время короткого нажатия в мс
+#define PASS_LEN 4 // длина пароля
+#define WATCH_DOOR 6 // время в секундах для ввода пароля
+#define LOW_LIGHT 85 // уставка света минимум
+#define HI_LIGHT 200 // уставка света минимум
 #define LOW_TEMP 22 // уставка температуры на включение обогрева
 #define HI_TEMP 27 // уставка температуры на включение охлаждения
 #define ALARM_TEMP 28 // уставка температуры на сигнализацию
@@ -34,13 +37,15 @@
  boolean btnState=false; // состояние кнопки
  boolean flagBtnPressed=false; // флаг нажатия кнопки
  unsigned long btnTimer = 0; // таймер для устранения дребезга кнопки
- byte cnt=0; // счетчик
+ byte cnt=0; // счетчик для работы с паролем
+ byte cnt_watch_door=0; // счетчик таймера для ввода пароля
  boolean startCode = false; // флаг начала кодовой последовательности
  byte led_mode =1; // режим работы светодиода 1 - работа 2 - прием пароля 3
  boolean blinker=false; // мигание светодиода
  boolean door_open=false; // открытие двери
-boolean password[PASS_LEN] ={ true,  true, false, false ,false ,true }; // ключ открытия двери false - короткое true - динное нажатие
-boolean key[PASS_LEN] = { false,  false, false, false ,false ,false }; // текущий прием пароля
+ 
+boolean password[PASS_LEN] ={ true,  true, false, false  }; // ключ открытия двери false - короткое true - динное нажатие
+boolean key[PASS_LEN] = { false,  false, false, false  }; // текущий прием пароля
 boolean password_good =false; //совпадение пароля
 unsigned long pulse_widht = 0; // длительность нажатия
 
@@ -132,7 +137,6 @@ void loop() {
   if ( flagTimer1 == true ) {
     flagTimer1= false;
     // ТАЙМЕР 1
-     
     switch (led_mode) { // режимы работы светодиода PIN_LED_3
       case 1:
       // в работе
@@ -146,17 +150,17 @@ void loop() {
     }
 // автоматическое управление светом
 if (Drive.Auto == true) {
-         if  (Sensors.Light<85) { // включаем свет на всю
+         if  (Sensors.Light<LOW_LIGHT) { // включаем свет на всю
           analogWrite(PIN_LEDR, 255);
           analogWrite(PIN_LEDG, 255);
           analogWrite(PIN_LEDB, 255);
         }
-        if  (Sensors.Light>85 && Sensors.Light<200) { // включаем свет на серединку
+        if  (Sensors.Light>LOW_LIGHT && Sensors.Light<HI_LIGHT) { // включаем свет на серединку
           analogWrite(PIN_LEDR, 127);
           analogWrite(PIN_LEDG, 10);
           analogWrite(PIN_LEDB, 10);
         }
-         if  (Sensors.Light>200) { // выключаем свет 
+         if  (Sensors.Light>HI_LIGHT) { // выключаем свет 
           analogWrite(PIN_LEDR, 0);
           analogWrite(PIN_LEDG, 0);
           analogWrite(PIN_LEDB, 0);
@@ -186,6 +190,19 @@ if (Drive.Auto == true) {
       else {
       Sensors.TempAlarm=false; // если температура ниже уставки выключить сигнализацию
     }
+
+ // таймер ввода пароля
+   if (cnt>0) {
+    cnt_watch_door++;
+   }
+   if (cnt_watch_door>WATCH_DOOR){
+    // не успели ввести пароль, сброс
+    cnt=0;
+    led_mode=1;
+    cnt_watch_door=0;
+    password_good=false;
+   }
+    
   }
 //**************Таймер 2********************** 
   if ( flagTimer2 == true ) {
@@ -252,13 +269,18 @@ if ( timerCount3 >= CYCLE_3_TIME ) {
   btnState = !digitalRead(PIN_BTN); // считали кнопку инвертировано для удобства
     if (btnState && !flagBtnPressed && millis() - btnTimer > BOUNCE_DELAY) {
     flagBtnPressed = true; // кнопка нажата
+ //   Serial.print ("pressed ");
+     if (cnt > 0){
+      pulse_widht=millis()-btnTimer; // длина замера
+ //      Serial.println(pulse_widht);
+     }
     btnTimer = millis();
     }
   //*********отпускание кнопки
   if (!btnState && flagBtnPressed && millis() - btnTimer > BOUNCE_DELAY) {
     flagBtnPressed = false; // кнопка отжата
-    pulse_widht=millis()-btnTimer; // длина замера
     startCode =true;
+ //   Serial.println("unpressed ");
     btnTimer = millis();
    }
 
@@ -267,17 +289,22 @@ if ( timerCount3 >= CYCLE_3_TIME ) {
 if (startCode == true) { // если кнопка отпущена, был замер
    startCode = false;
    led_mode = 2; // режим работы светодиода 2
-      if (cnt<PASS_LEN) {
-      key[cnt]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
+//   Serial.print("cnt="); Serial.println(cnt);
+      if (cnt>0 && cnt<=PASS_LEN) {
+      key[cnt-1]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
+ //     Serial.print(cnt-1); Serial.print(" ");Serial.println(pulse_widht);
       }
     cnt++;
-    if (cnt>=PASS_LEN) { // получили все нажатия по длине пароля
+    if (cnt>PASS_LEN) { // получили все нажатия по длине пароля
       for (byte i=0; i < PASS_LEN; i++){
         if (key[i] == password [i]) { // проверяем правильность пароля
           password_good =true;
+   //       Serial.println("pass good");
           }
         else {
             password_good =false;
+  //          Serial.println("pass wrong");
+            break;
           }
           }
    
