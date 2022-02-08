@@ -76,14 +76,24 @@ WiFi.begin(ssid, password);
 void loop() {
 
   if (Serial.readBytes((byte*)&Sensors, sizeof(Sensors))) {
-  /*  Serial.print("T=");
-    Serial.println(Sensors.Temp);
-    Serial.print("H=");
-    Serial.println(Sensors.Hum);
-    Serial.print("L=");
-    Serial.println(Sensors.Light);*/
-        
+          
   }
+
+  // ************************ ЗАПИСЬ ************************
+    
+    // Записываем  значение в переменную для отпраки в сервис
+    mypanel.write(VarName_Temperature, Sensors.Temp);    
+    mypanel.write(VarName_Humidity, Sensors.Hum);    
+    mypanel.write(VarName_Light, Sensors.Light);    
+    mypanel.write(VarName_TempAlarm, Sensors.TempAlarm);
+    mypanel.write(VarName_Auto,Drive.Auto);
+    // Отправляем переменные из контроллера в сервис
+    status = mypanel.writeUpdate();
+    // Если статус равен константе OK...
+  /*  if (status == OK) {
+        // Выводим текст в последовательный порт
+  //      Serial.println("------- Write OK -------");
+    }*/
 
     // ************************ ЧТЕНИЕ ************************
 
@@ -106,26 +116,14 @@ Drive.LedG= (byte) io_LightGreen;
 Drive.LedRed= (boolean) io_Heat;
 Drive.LedBlue=(boolean) io_Cool;   
 Drive.Auto = (boolean) io_Auto;
-
-
-
     }
 
-    // ************************ ЗАПИСЬ ************************
-    
-    // Записываем  значение в переменную для отпраки в сервис
-    mypanel.write(VarName_Temperature, Sensors.Temp);    
-    mypanel.write(VarName_Humidity, Sensors.Hum);    
-    mypanel.write(VarName_Light, Sensors.Light);    
-    mypanel.write(VarName_TempAlarm, Sensors.TempAlarm);
-    // Отправляем переменные из контроллера в сервис
-    status = mypanel.writeUpdate();
-    // Если статус равен константе OK...
-    if (status == OK) {
-        // Выводим текст в последовательный порт
-  //      Serial.println("------- Write OK -------");
-    }
+if ( Drive.LedRed == true ||  Drive.LedBlue == true || Drive.LedR>0   || Drive.LedB >0 || Drive.LedG >0) { // если есть команды из облака отключаем автоматическое управление
+Drive.Auto = false; // пока не снимется на ноль всё управление режим авто не включится
+}
+
+
 
 Serial.write((byte*)&Drive, sizeof(Drive)); // отправили данные в Arduino
-delay(500);
+delay(1000); // обмен с панелью не чаще 1 раза в секуду
 }
