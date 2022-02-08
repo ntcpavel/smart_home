@@ -32,6 +32,8 @@
 #define LOW_TEMP 22 // уставка температуры на включение обогрева
 #define HI_TEMP 27 // уставка температуры на включение охлаждения
 #define ALARM_TEMP 28 // уставка температуры на сигнализацию
+#define SERVO_CLOSE 2000 // угол закрытия
+#define SERVO_OPEN 544 // угол открытия
 //переменные
  byte  timerCount1=0;    // счетчик таймера 1
  byte  timerCount2=0;    // счетчик таймера 2
@@ -103,7 +105,7 @@ pinMode(PIN_LED_4, OUTPUT);
 dht.begin(); // инициализация датчика температуры и влажности
 digitalWrite(PIN_LED_4,LOW);
 door_servo.attach(PIN_SERVO); // инициализация сервопривода
-door_servo.write(0); // установили в ноль
+door_servo.writeMicroseconds(SERVO_CLOSE); // угол закрытия двери
 delay(1500);
 door_servo.detach(); //  освободили пин сервопривода для pwm rgb светодиода
 // инициализация структур
@@ -132,7 +134,7 @@ void loop() {
   password_good2 = false ; // сбросили
   // открыли замок
   door_servo.attach(PIN_SERVO); // подсоединили сервопривод
-  door_servo.write (160);
+  door_servo.writeMicroseconds(SERVO_OPEN);
   door_open = true; // дверь открыта
   timerCount3=0; // запустили таймер на 15 с
 //  Serial.print("servo160 door_open=");Serial.println(door_open);
@@ -294,7 +296,7 @@ if ( flagTimer3 == true ) {
  if (door_open == true) { // если дверь открыта
  // Serial.print("servo 0 door_open=");Serial.println(door_open);
   door_open = false;
-  door_servo.write (0); // закрыли дверь через 15 с
+  door_servo.writeMicroseconds(SERVO_CLOSE); // закрыли дверь через 15 с
   cnt_servo=1;
   
  }
