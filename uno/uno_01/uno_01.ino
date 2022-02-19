@@ -24,7 +24,7 @@
 #define KNOCK_DELAY 40 // время на дребезг датчика удара в мс
 #define SHORT_PRESS 400 // время короткого нажатия в мс
 #define PASS_LEN 4 // длина пароля
-#define WATCH_DOOR 6 // время в секундах для ввода пароля
+#define WATCH_DOOR 5 // время в секундах для ввода пароля
 #define WATCH_SERVO 3 // время в секундах для сервопривода
 #define WATCH_LED_4 4 // время в секундах для светодиода пароля
 #define LOW_LIGHT 85 // уставка света минимум
@@ -32,8 +32,8 @@
 #define LOW_TEMP 22 // уставка температуры на включение обогрева
 #define HI_TEMP 27 // уставка температуры на включение охлаждения
 #define ALARM_TEMP 28 // уставка температуры на сигнализацию
-#define SERVO_CLOSE 2000 // угол закрытия
-#define SERVO_OPEN 544 // угол открытия
+#define SERVO_CLOSE 544 // угол закрытия
+#define SERVO_OPEN 2300 // угол открытия
 //переменные
  byte  timerCount1=0;    // счетчик таймера 1
  byte  timerCount2=0;    // счетчик таймера 2
@@ -129,7 +129,7 @@ void loop() {
 
    
 // правильный пароль замка
- if (password_good == true && password_good2==true){
+ if (password_good == true && password_good2 == true){
   password_good = false ; // сбросили
   password_good2 = false ; // сбросили
   // открыли замок
@@ -330,14 +330,15 @@ if (startCode2 == true) { // если кнопка отпущена, был за
  //  Serial.print("cnt2="); Serial.println(cnt2);
       if (cnt2>0 && cnt2<=PASS_LEN) {
       key[cnt2-1]=pulse_widht>SHORT_PRESS; // записываем в массив текущее нажатие  false - короткое true - динное нажатие
- //     Serial.print(cnt2-1); Serial.print(" ");Serial.println(pulse_widht);
+ //     Serial.print(cnt2-1); Serial.print(" ");Serial.print(pulse_widht);
+ //     Serial.print(" key="); Serial.print(" ");Serial.println(key[cnt2-1]);
       }
     cnt2++;
     if (cnt2>PASS_LEN) { // получили все нажатия по длине пароля
       for (byte i=0; i < PASS_LEN; i++){
         if (key[i] == password [i]) { // проверяем правильность пароля
           password_good2 =true;
-    //      Serial.println("pass good");
+     //     Serial.println("pass good");
           }
         else {
             password_good2 =false;
@@ -348,10 +349,10 @@ if (startCode2 == true) { // если кнопка отпущена, был за
    
      cnt2=0; // готовы к новой проверке пароля
      led_mode = 1; // режим работы светодиода 1
-     if (password_good2=true) {
+     if (password_good2==true) {
       cnt_pass_led=1; // включили индикаторный светодиод
      }
-     //Serial.print("pass2= "); Serial.println(password_good2);
+  //   Serial.print("pass2= "); Serial.println(password_good2);
     }
  }
  
@@ -425,7 +426,7 @@ if (startCode == true) { // если кнопка отпущена, был за�
    
      cnt=0; // готовы к новой проверке пароля
      led_mode = 1; // режим работы светодиода 1
-     if (password_good=true) {
+     if (password_good==true) {
       cnt_pass_led=1; // включили индикаторный светодиод
      }
    //  Serial.print("pass1= "); Serial.println(password_good);
