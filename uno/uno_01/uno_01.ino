@@ -12,7 +12,7 @@
 #define PIN_LED_1 7 // // красный светодиод
 #define PIN_LED_2 8 // синий светодиод
 #define PIN_SERVO 9 // сервопривод
-#define PIN_KNOCK 12 // датчик удара
+#define PIN_KNOCK A3 // датчик удара
 #define PIN_LED_3 13 // индикаторный светодиод
 #define PIN_DAC A0 // фоторезистор
 #define PIN_LED_4 A5 // светодиод пароля
@@ -22,7 +22,8 @@
 #define CYCLE_3_TIME 1500  // время цикла 3 (  TIMER_PERIOD*1500= 15 с)
 #define BOUNCE_DELAY 50 // время на дребезг кнопки в мс
 #define KNOCK_DELAY 40 // время на дребезг датчика удара в мс
-#define SHORT_PRESS 400 // время короткого нажатия в мс
+#define KNOCK_SET 360 // пороговое значение срабатывания датчика удара
+#define SHORT_PRESS 450 // время короткого нажатия в мс
 #define PASS_LEN 4 // длина пароля
 #define WATCH_DOOR 5 // время в секундах для ввода пароля
 #define WATCH_SERVO 3 // время в секундах для сервопривода
@@ -34,6 +35,8 @@
 #define ALARM_TEMP 28 // уставка температуры на сигнализацию
 #define SERVO_CLOSE 544 // угол закрытия
 #define SERVO_OPEN 2300 // угол открытия
+//константы
+const int cor_temp=-2; // коррекция датчика температуры
 //переменные
  byte  timerCount1=0;    // счетчик таймера 1
  byte  timerCount2=0;    // счетчик таймера 2
@@ -137,7 +140,7 @@ void loop() {
   door_servo.writeMicroseconds(SERVO_OPEN);
   door_open = true; // дверь открыта
   timerCount3=0; // запустили таймер на 15 с
-//  Serial.print("servo160 door_open=");Serial.println(door_open);
+//  Serial.print("servo door_open=");Serial.println(door_open);
   
  }
 
@@ -273,7 +276,7 @@ if (Drive.Auto == true) {
   if (isnan(event.temperature)) {
   Sensors.Temp = 0;}
    else {
-    Sensors.Temp =(byte)event.temperature;
+    Sensors.Temp =(byte)event.temperature+cor_temp;
    }
   dht.humidity().getEvent(&event); // считать влажность
   
@@ -304,7 +307,13 @@ if ( flagTimer3 == true ) {
   }
 
 //********датчик удара*********
-    knockState = !digitalRead(PIN_KNOCK); // считали датчик удара инвертировано для удобства
+   if (analogRead(PIN_KNOCK)>KNOCK_SET){ // считали датчик удара
+   knockState = true; 
+   }
+   else {
+    knockState = false;
+   }
+   
     if (knockState && !flagKnockPressed && millis() - knockTimer > KNOCK_DELAY) {
     flagKnockPressed = true; // срабатывание датчика
     //Serial.print ("pressed ");
@@ -352,7 +361,7 @@ if (startCode2 == true) { // если кнопка отпущена, был за
      if (password_good2==true) {
       cnt_pass_led=1; // включили индикаторный светодиод
      }
-  //   Serial.print("pass2= "); Serial.println(password_good2);
+ //    Serial.print("pass2= "); Serial.println(password_good2);
     }
  }
  
